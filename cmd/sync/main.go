@@ -1,49 +1,20 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/JLL32/nuitee/internal/data"
+	_ "github.com/lib/pq"
 )
-
-type Address struct {
-	Address    string `json:"address"`
-	City       string `json:"city"`
-	State      string `json:"state"`
-	Country    string `json:"country"`
-	PostalCode string `json:"postal_code"`
-}
-
-type Hotel struct {
-	HotelID      int     `json:"hotel_id"`
-	MainImageTh  string  `json:"main_image_th"`
-	HotelName    string  `json:"hotel_name"`
-	Phone        string  `json:"phone"`
-	Email        string  `json:"email"`
-	Address      Address `json:"address"`
-	Stars        int     `json:"stars"`
-	Rating       float64 `json:"rating"`
-	ReviewCount  int     `json:"review_count"`
-	ChildAllowed bool    `json:"child_allowed"`
-	PetsAllowed  bool    `json:"pets_allowed"`
-	Description  string  `json:"description"`
-}
-
-type Review struct {
-	AverageScore int    `json:"average_score"`
-	Country      string `json:"country"`
-	Type         string `json:"type"`
-	Name         string `json:"name"`
-	Date         string `json:"date"`
-	Headline     string `json:"headline"`
-	Language     string `json:"language"`
-	Pros         string `json:"pros"`
-	Cons         string `json:"cons"`
-}
 
 /*
 hotel:
@@ -102,9 +73,11 @@ func main() {
 		return
 	}
 
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))
+
 	inputData, err := os.ReadFile(inputFile)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(err.Error())
 		panic(err)
 	}
 
@@ -113,23 +86,44 @@ func main() {
 		ids[i] = strings.TrimSpace(ids[i])
 	}
 
+	// TODO: add concurrency, timeouts and retries
 	for _, id := range ids {
-		var hotel Hotel
+		var hotel data.Hotel
 		err := fetchJson(fmt.Sprintf("%s/v3.0/property/%s", apiUrl, id), map[string]string{"x-api-key": apiKey}, &hotel)
 		if err != nil {
 			fmt.Printf("Error fetching hotel data for ID %s: %v\n", id, err)
 			continue
 		}
 
-		var reviews []Review
+		var reviews []data.Review
 		err = fetchJson(fmt.Sprintf("%s/v3.0/property/reviews/%s/1000000", apiUrl, id), map[string]string{"x-api-key": apiKey}, &reviews)
 		if err != nil {
 			fmt.Printf("Error fetching review data for ID %s: %v\n", id, err)
 			continue
 		}
 
-		fmt.Printf("%+v\n", hotel)
-		fmt.Printf("%+v\n", reviews)
+		db, err := openDB(dsn)
+		if err != nil {
+			fmt.Println(err)
+			panic(err)
+		}
+		defer db.Close()
+
+		// TODO: if we're syncing stuff we should turn this into an upsert function
+		models := data.NewModels(db)
+		err = models.Hotels.Insert(&hotel)
+		if err != nil {
+			fmt.Printf("Error inserting hotel data for ID %s: %v\n", id, err)
+			continue
+		}
+
+		for _, review := range reviews {
+			err = models.Reviews.Insert(hotel.HotelID, &review)
+			if err != nil {
+				fmt.Printf("Error inserting review data for ID %s: %v\n", id, err)
+				continue
+			}
+		}
 	}
 
 }
@@ -166,4 +160,22 @@ func fetchJson(url string, headers map[string]string, output any) error {
 	}
 
 	return nil
+}
+
+func openDB(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	return db, nil
 }
