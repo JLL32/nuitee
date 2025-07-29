@@ -23,7 +23,7 @@ CREATE TABLE reviews (
     id SERIAL PRIMARY KEY,
     hotel_id INTEGER NOT NULL,
     average_score INTEGER,
-    country CHAR(2),
+    country TEXT,
     type TEXT,
     name TEXT,
     date TIMESTAMP,
