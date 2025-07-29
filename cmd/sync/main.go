@@ -97,7 +97,7 @@ func main() {
 	flag.StringVar(&apiUrl, "api-url", "", "API URL for fetching data")
 	flag.Parse()
 
-	if inputFile == "" || dsn == "" {
+	if inputFile == "" || dsn == "" || apiKey == "" || apiUrl == "" {
 		flag.Usage()
 		return
 	}
