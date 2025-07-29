@@ -84,19 +84,23 @@ hotel:
 */
 
 func main() {
-	var inputFile string
-	var dsn string
-	var apiKey string
+	var (
+		inputFile string
+		dsn       string
+		apiKey    string
+		apiUrl    string
+	)
 
 	flag.StringVar(&inputFile, "input", "", "Input file path")
-	flag.StringVar(&dsn, "dsn", "", "Database connection string")
+	flag.StringVar(&dsn, "db-dsn", "", "Database connection string")
 	flag.StringVar(&apiKey, "api-key", "", "API key for authentication")
+	flag.StringVar(&apiUrl, "api-url", "", "API URL for fetching data")
 	flag.Parse()
 
-	// if inputFile == "" || dsn == "" {
-	// 	flag.Usage()
-	// 	return
-	// }
+	if inputFile == "" || dsn == "" {
+		flag.Usage()
+		return
+	}
 
 	inputData, err := os.ReadFile(inputFile)
 	if err != nil {
@@ -111,14 +115,14 @@ func main() {
 
 	for _, id := range ids {
 		var hotel Hotel
-		err := fetchJson(fmt.Sprintf("https://content-api.cupid.travel/v3.0/property/%s", id), map[string]string{"x-api-key": apiKey}, &hotel)
+		err := fetchJson(fmt.Sprintf("%s/v3.0/property/%s", apiUrl, id), map[string]string{"x-api-key": apiKey}, &hotel)
 		if err != nil {
 			fmt.Printf("Error fetching hotel data for ID %s: %v\n", id, err)
 			continue
 		}
 
 		var reviews []Review
-		err = fetchJson(fmt.Sprintf("https://content-api.cupid.travel/v3.0/property/reviews/%s/1000000", id), map[string]string{"x-api-key": apiKey}, &reviews)
+		err = fetchJson(fmt.Sprintf("%s/v3.0/property/reviews/%s/1000000", apiUrl, id), map[string]string{"x-api-key": apiKey}, &reviews)
 		if err != nil {
 			fmt.Printf("Error fetching review data for ID %s: %v\n", id, err)
 			continue
