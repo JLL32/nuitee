@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 )
 
@@ -31,30 +32,6 @@ type Hotel struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-/*
-CREATE TABLE hotels (
-
-	hotel_id INTEGER PRIMARY KEY,
-	main_image_th TEXT,
-	hotel_name TEXT NOT NULL,
-	phone TEXT,
-	email TEXT,
-	address TEXT,
-	city TEXT,
-	state TEXT,
-	country TEXT,
-	postal_code TEXT,
-	stars INTEGER,
-	rating DECIMAL(3,2),
-	review_count INTEGER,
-	child_allowed BOOLEAN,
-	pets_allowed BOOLEAN,
-	description TEXT,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-
-);
-*/
 type HotelModel struct {
 	DB *sql.DB
 }
@@ -90,4 +67,52 @@ func (h HotelModel) Insert(hotel *Hotel) error {
 	defer cancel()
 
 	return h.DB.QueryRowContext(ctx, query, args...).Scan(&hotel.CreatedAt, &hotel.UpdatedAt)
+}
+
+func (h HotelModel) Get(id int64) (*Hotel, error) {
+	if id <= 0 {
+		return nil, ErrRecordNotFound
+	}
+
+	query :=
+		`SELECT hotel_id, main_image_th, hotel_name, phone, email, address, city, state, country, postal_code, stars, rating, review_count, child_allowed, pets_allowed, description, created_at, updated_at
+		FROM hotels
+		WHERE hotel_id = $1`
+
+	var hotel Hotel
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := h.DB.QueryRowContext(ctx, query, id).Scan(
+		&hotel.HotelID,
+		&hotel.MainImageTh,
+		&hotel.HotelName,
+		&hotel.Phone,
+		&hotel.Email,
+		&hotel.Address.Address,
+		&hotel.Address.City,
+		&hotel.Address.State,
+		&hotel.Address.Country,
+		&hotel.Address.PostalCode,
+		&hotel.Stars,
+		&hotel.Rating,
+		&hotel.ReviewCount,
+		&hotel.ChildAllowed,
+		&hotel.PetsAllowed,
+		&hotel.Description,
+		&hotel.CreatedAt,
+		&hotel.UpdatedAt,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &hotel, nil
 }

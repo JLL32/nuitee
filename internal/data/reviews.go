@@ -3,30 +3,10 @@ package data
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 )
 
-/*
-*
-CREATE TABLE reviews (
-
-	id SERIAL PRIMARY KEY,
-	hotel_id INTEGER NOT NULL,
-	average_score INTEGER,
-	country CHAR(2),
-	type TEXT,
-	name TEXT,
-	date TIMESTAMP,
-	headline TEXT,
-	language CHAR(2),
-	pros TEXT,
-	cons TEXT,
-	source TEXT,
-	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	FOREIGN KEY (hotel_id) REFERENCES hotels(hotel_id) ON DELETE CASCADE
-
-);
-*/
 type Review struct {
 	ID           int       `json:"id"`
 	HotelID      int       `json:"hotel_id"`
@@ -76,4 +56,45 @@ func (r ReviewModel) Insert(hotelID int, review *Review) error {
 	defer cancel()
 
 	return r.DB.QueryRowContext(ctx, query, args...).Scan(&review.ID, &review.HotelID, &review.CreatedAt)
+}
+
+func (r ReviewModel) Get(hotelID int64, id int64) (*Review, error) {
+	if id <= 0 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+		SELECT id, hotel_id, average_score, country, type, name, date, headline, language, pros, cons, source, created_at
+		FROM reviews
+		WHERE id = $1 AND hotel_id = $2
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var review Review
+	err := r.DB.QueryRowContext(ctx, query, id, hotelID).Scan(
+		&review.ID,
+		&review.HotelID,
+		&review.AverageScore,
+		&review.Country,
+		&review.Type,
+		&review.Name,
+		&review.Date,
+		&review.Headline,
+		&review.Language,
+		&review.Pros,
+		&review.Cons,
+		&review.Source,
+		&review.CreatedAt,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return &review, nil
 }
