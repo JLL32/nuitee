@@ -86,17 +86,27 @@ func main() {
 		ids[i] = strings.TrimSpace(ids[i])
 	}
 
-	// TODO: add concurrency, timeouts and retries
+	// TODO: add concurrency
 	for _, id := range ids {
 		var hotel data.Hotel
-		err := fetchJson(fmt.Sprintf("%s/v3.0/property/%s", apiUrl, id), map[string]string{"x-api-key": apiKey}, &hotel)
+		for range 3 {
+			err = fetchJson(fmt.Sprintf("%s/v3.0/property/%s", apiUrl, id), map[string]string{"x-api-key": apiKey}, &hotel)
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			fmt.Printf("Error fetching hotel data for ID %s: %v\n", id, err)
 			continue
 		}
 
 		var reviews []data.Review
-		err = fetchJson(fmt.Sprintf("%s/v3.0/property/reviews/%s/1000000", apiUrl, id), map[string]string{"x-api-key": apiKey}, &reviews)
+		for range 3 {
+			err = fetchJson(fmt.Sprintf("%s/v3.0/property/reviews/%s/1000000", apiUrl, id), map[string]string{"x-api-key": apiKey}, &reviews)
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			fmt.Printf("Error fetching review data for ID %s: %v\n", id, err)
 			continue
