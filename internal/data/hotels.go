@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -115,4 +116,65 @@ func (h HotelModel) Get(id int64) (*Hotel, error) {
 	}
 
 	return &hotel, nil
+}
+
+func (h HotelModel) GetAll(search string, filters Filters) ([]*Hotel, Metadata, error) {
+	query := fmt.Sprintf(`
+		SELECT count(*) OVER(), hotel_id, main_image_th, hotel_name, phone, email, address, city, state, country, postal_code, stars, rating, review_count, child_allowed, pets_allowed, description, created_at, updated_at
+		FROM hotels
+		WHERE fts @@ plainto_tsquery('simple', $1) OR $1 = ''
+		ORDER BY %s %s, hotel_id ASC
+		LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := h.DB.QueryContext(ctx, query, search, filters.limit(), filters.offset())
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+	defer rows.Close()
+
+	totalRecords := 0
+	hotels := []*Hotel{}
+
+	for rows.Next() {
+		var hotel Hotel
+
+		err := rows.Scan(
+			&totalRecords,
+			&hotel.HotelID,
+			&hotel.MainImageTh,
+			&hotel.HotelName,
+			&hotel.Phone,
+			&hotel.Email,
+			&hotel.Address.Address,
+			&hotel.Address.City,
+			&hotel.Address.State,
+			&hotel.Address.Country,
+			&hotel.Address.PostalCode,
+			&hotel.Stars,
+			&hotel.Rating,
+			&hotel.ReviewCount,
+			&hotel.ChildAllowed,
+			&hotel.PetsAllowed,
+			&hotel.Description,
+			&hotel.CreatedAt,
+			&hotel.UpdatedAt,
+		)
+
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+
+		hotels = append(hotels, &hotel)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetaData(totalRecords, filters.Page, filters.PageSize)
+
+	return hotels, metadata, nil
 }
