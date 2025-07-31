@@ -21,6 +21,7 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/hotels/:hotelID/reviews", app.listReviewsHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/hotels/:hotelID/reviews/:reviewID", app.getReviewHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/hotels/:hotelID/reviews/:reviewID/summary", app.getReviewSummaryHandler)
 
 	return app.metrics(app.recoverPanic(app.rateLimit(router)))
 }

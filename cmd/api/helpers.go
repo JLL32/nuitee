@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -146,4 +147,61 @@ func (app *application) background(fn func()) {
 
 		fn()
 	}()
+}
+
+type PromptResult struct {
+	Choices []struct {
+		Message struct {
+			Content string `json:"content"`
+		} `json:"message"`
+	} `json:"choices"`
+}
+
+func (app *application) OpenAIPrompt(prompt string) (*PromptResult, error) {
+	body := map[string]any{
+		"model": "gpt-3.5-turbo",
+		"messages": []map[string]string{
+			{"role": "user", "content": prompt},
+		},
+	}
+
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+app.config.openAIkey)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp := &http.Response{}
+	for range 3 {
+		resp, err = client.Do(req)
+		if err == nil {
+			break;
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("OpenAI API returned status code %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+	}
+
+	bodyBytes, _ := io.ReadAll(resp.Body)
+
+	var result PromptResult
+
+	if err := json.Unmarshal(bodyBytes, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }

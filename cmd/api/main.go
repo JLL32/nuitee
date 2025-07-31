@@ -31,6 +31,7 @@ type config struct {
 		burst   int
 		enabled bool
 	}
+	openAIkey string
 }
 
 type application struct {
@@ -55,6 +56,7 @@ func main() {
 	flag.Float64Var(&cfg.limiter.rps, "limiter-rps", 2, "Rate limiter maximum requests per second")
 	flag.IntVar(&cfg.limiter.burst, "limiter-burst", 4, "Rate limiter maximum burst")
 	flag.BoolVar(&cfg.limiter.enabled, "limiter-enabled", true, "Enable rate limiter")
+	flag.StringVar(&cfg.openAIkey, "openai-key", "", "OpenAI API key")
 
 	flag.Parse()
 

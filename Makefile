@@ -21,7 +21,7 @@ confirm:
 ## run/api: run the cmd/api application
 .PHONY: run/api
 run/api:
-	go run ./cmd/api -db-dsn=${NUITEE_DB_DSN}
+	go run ./cmd/api -db-dsn=${NUITEE_DB_DSN} -openai-key=${OPEN_AI_KEY}
 
 run/sync:
 	go run ./cmd/sync -db-dsn=${NUITEE_DB_DSN} -api-key=${CUPID_API_KEY} -api-url=${CUPID_API_URL} -input='input.txt'
