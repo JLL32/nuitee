@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -97,4 +98,58 @@ func (r ReviewModel) Get(hotelID int64, id int64) (*Review, error) {
 	}
 
 	return &review, nil
+}
+
+func (r ReviewModel) GetAll(search string, filters Filters) ([]*Review, Metadata, error) {
+	query := fmt.Sprintf(`
+		SELECT count(*) OVER(), id, hotel_id, average_score, country, type, name, date, headline, language, pros, cons, source, created_at
+		FROM reviews
+		WHERE fts @@ plainto_tsquery('simple', $1) OR $1 = ''
+		ORDER BY %s %s, id ASC
+		LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := r.DB.QueryContext(ctx, query, search, filters.limit(), filters.offset())
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+	defer rows.Close()
+
+	totalRows := 0
+	var reviews []*Review
+
+	for rows.Next() {
+		var review Review
+
+		err := rows.Scan(
+			&totalRows,
+			&review.ID,
+			&review.HotelID,
+			&review.AverageScore,
+			&review.Country,
+			&review.Type,
+			&review.Name,
+			&review.Date,
+			&review.Headline,
+			&review.Language,
+			&review.Pros,
+			&review.Cons,
+			&review.Source,
+			&review.CreatedAt,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+		reviews = append(reviews, &review)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetaData(totalRows, filters.Page, filters.PageSize)
+
+	return reviews, metadata, nil
 }
