@@ -100,18 +100,18 @@ func (r ReviewModel) Get(hotelID int64, id int64) (*Review, error) {
 	return &review, nil
 }
 
-func (r ReviewModel) GetAll(search string, filters Filters) ([]*Review, Metadata, error) {
+func (r ReviewModel) GetAll(hotelID int64, search string, filters Filters) ([]*Review, Metadata, error) {
 	query := fmt.Sprintf(`
 		SELECT count(*) OVER(), id, hotel_id, average_score, country, type, name, date, headline, language, pros, cons, source, created_at
 		FROM reviews
-		WHERE fts @@ plainto_tsquery('simple', $1) OR $1 = ''
+		WHERE hotel_id = $1 AND (fts @@ plainto_tsquery('simple', $2) OR $2 = '')
 		ORDER BY %s %s, id ASC
-		LIMIT $2 OFFSET $3`, filters.sortColumn(), filters.sortDirection())
+		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := r.DB.QueryContext(ctx, query, search, filters.limit(), filters.offset())
+	rows, err := r.DB.QueryContext(ctx, query, hotelID, search, filters.limit(), filters.offset())
 	if err != nil {
 		return nil, Metadata{}, err
 	}
