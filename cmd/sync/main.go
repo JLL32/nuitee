@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/JLL32/nuitee/internal/data"
+	"github.com/go-co-op/gocron"
 	_ "github.com/lib/pq"
 )
 
@@ -22,12 +23,14 @@ func main() {
 		dsn       string
 		apiKey    string
 		apiUrl    string
+		interval  int
 	)
 
 	flag.StringVar(&inputFile, "input", "", "Input file path")
 	flag.StringVar(&dsn, "db-dsn", "", "Database connection string")
 	flag.StringVar(&apiKey, "api-key", "", "API key for authentication")
 	flag.StringVar(&apiUrl, "api-url", "", "API URL for fetching data")
+	flag.IntVar(&interval, "interval", 3, "Interval in minutes")
 	flag.Parse()
 
 	if inputFile == "" || dsn == "" || apiKey == "" || apiUrl == "" {
@@ -57,48 +60,51 @@ func main() {
 	defer db.Close()
 	slog.Info("Database connection established")
 
-	// TODO: add concurrency
-	for _, id := range ids {
-		var hotel data.Hotel
-		for range 3 {
-			err = fetchJson(fmt.Sprintf("%s/v3.0/property/%s", apiUrl, id), map[string]string{"x-api-key": apiKey}, &hotel)
-			if err == nil {
-				break
+	s := gocron.NewScheduler(time.UTC)
+	s.Every(interval).Minutes().Do(func() {
+		slog.Info("Starting sync")
+		for _, id := range ids {
+			var hotel data.Hotel
+			for range 3 {
+				err = fetchJson(fmt.Sprintf("%s/v3.0/property/%s", apiUrl, id), map[string]string{"x-api-key": apiKey}, &hotel)
+				if err == nil {
+					break
+				}
 			}
-		}
-		if err != nil {
-			slog.Error(fmt.Sprintf("Error fetching hotel data for ID %s: %v", id, err))
-			continue
-		}
-
-		var reviews []data.Review
-		for range 3 {
-			err = fetchJson(fmt.Sprintf("%s/v3.0/property/reviews/%s/1000000", apiUrl, id), map[string]string{"x-api-key": apiKey}, &reviews)
-			if err == nil {
-				break
-			}
-		}
-		if err != nil {
-			slog.Error(fmt.Sprintf("Error fetching review data for ID %s: %v", id, err))
-			continue
-		}
-
-		// TODO: if we're syncing stuff we should turn this into an upsert function
-		models := data.NewModels(db)
-		err = models.Hotels.Insert(&hotel)
-		if err != nil {
-			slog.Error(fmt.Sprintf("Error inserting hotel data for ID %s: %v", id, err))
-			continue
-		}
-
-		for _, review := range reviews {
-			err = models.Reviews.Insert(hotel.HotelID, &review)
 			if err != nil {
-				slog.Error(fmt.Sprintf("Error inserting review data for ID %s: %v", id, err))
+				slog.Error(fmt.Sprintf("Error fetching hotel data for ID %s: %v", id, err))
 				continue
 			}
+
+			var reviews []data.Review
+			for range 3 {
+				err = fetchJson(fmt.Sprintf("%s/v3.0/property/reviews/%s/1000000", apiUrl, id), map[string]string{"x-api-key": apiKey}, &reviews)
+				if err == nil {
+					break
+				}
+			}
+			if err != nil {
+				slog.Error(fmt.Sprintf("Error fetching review data for ID %s: %v", id, err))
+				continue
+			}
+
+			models := data.NewModels(db)
+			err = models.Hotels.Upsert(&hotel)
+			if err != nil {
+				slog.Error(fmt.Sprintf("Error inserting hotel data for ID %s: %v", id, err))
+				continue
+			}
+
+			for _, review := range reviews {
+				err = models.Reviews.Upsert(hotel.HotelID, &review)
+				if err != nil {
+					slog.Error(fmt.Sprintf("Error inserting review data for ID %s: %v", id, err))
+					continue
+				}
+			}
 		}
-	}
+	})
+	s.StartBlocking()
 
 }
 
