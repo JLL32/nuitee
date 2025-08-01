@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuitee API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .version {
+            background: rgba(255,255,255,0.2);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            display: inline-block;
+        }
+        
+        .nav {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .nav-link {
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-link:hover {
+            background: #dee2e6;
+        }
+        
+        .section {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #495057;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        h3 {
+            color: #6c757d;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .endpoint {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+        
+        .method.get { background: #28a745; color: white; }
+        .method.post { background: #007bff; color: white; }
+        .method.put { background: #ffc107; color: black; }
+        .method.delete { background: #dc3545; color: white; }
+        
+        .url {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background: #e9ecef;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            color: #495057;
+        }
+        
+        .params {
+            margin-top: 0.5rem;
+        }
+        
+        .param {
+            display: block;
+            margin: 0.25rem 0;
+            font-size: 0.875rem;
+        }
+        
+        .param-name {
+            font-weight: bold;
+            color: #6f42c1;
+        }
+        
+        .param-type {
+            color: #28a745;
+            font-style: italic;
+        }
+        
+        .example {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .example pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        
+        .status-codes {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1rem;
+            margin: 1rem 0;
+        }
+        
+        .status-code {
+            font-weight: bold;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 60px;
+        }
+        
+        .status-200 { background: #d4edda; color: #155724; }
+        .status-400 { background: #f8d7da; color: #721c24; }
+        .status-404 { background: #f8d7da; color: #721c24; }
+        .status-429 { background: #fff3cd; color: #856404; }
+        .status-500 { background: #f8d7da; color: #721c24; }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .nav-links {
+                flex-direction: column;
+            }
+            
+            .section {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Nuitee API Documentation</h1>
+            <span class="version">v1.0.0</span>
+            <p style="margin-top: 1rem; opacity: 0.9;">Hotel and review management API</p>
+        </header>
+        
+        <nav class="nav">
+            <div class="nav-links">
+                <a href="#base-info" class="nav-link">Base Info</a>
+                <a href="#system" class="nav-link">System</a>
+                <a href="#hotels" class="nav-link">Hotels</a>
+                <a href="#reviews" class="nav-link">Reviews</a>
+                <a href="#examples" class="nav-link">Examples</a>
+            </div>
+        </nav>
+        
+        <section id="base-info" class="section">
+            <h2>Base Information</h2>
+            <p><strong>Base URL:</strong> <code class="url">http://localhost:4000/v1</code></p>
+            <p><strong>Content Type:</strong> <code>application/json</code></p>
+            <p><strong>Rate Limiting:</strong> 2 requests per second, burst of 4</p>
+            
+            <h3>Interactive Documentation</h3>
+            <p>For a better experience, visit our interactive documentation:</p>
+            <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                <li><a href="/docs/swagger">Swagger UI</a> - Test endpoints interactively</li>
+                <li><a href="/docs/redoc">ReDoc</a> - Clean, readable documentation</li>
+                <li><a href="/docs/openapi.yaml">OpenAPI Spec</a> - Raw YAML specification</li>
+            </ul>
+        </section>
+        
+        <section id="system" class="section">
+            <h2>System Endpoints</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/v1/healthcheck</span>
+                <p>Check the health status of the API</p>
+                <div class="status-codes">
+                    <span class="status-code status-200">200</span>
+                    <span>API is healthy</span>
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/debug/vars</span>
+                <p>View application metrics and runtime information</p>
+            </div>
+        </section>
+        
+        <section id="hotels" class="section">
+            <h2>Hotel Endpoints</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/v1/hotels</span>
+                <p>List hotels with filtering and pagination</p>
+                
+                <div class="params">
+                    <h4>Query Parameters:</h4>
+                    <span class="param">
+                        <span class="param-name">search</span> 
+                        <span class="param-type">(string)</span> - Search term for hotel names
+                    </span>
+                    <span class="param">
+                        <span class="param-name">page</span> 
+                        <span class="param-type">(integer)</span> - Page number (default: 1)
+                    </span>
+                    <span class="param">
+                        <span class="param-name">page_size</span> 
+                        <span class="param-type">(integer)</span> - Items per page (default: 20, max: 100)
+                    </span>
+                    <span class="param">
+                        <span class="param-name">sort</span> 
+                        <span class="param-type">(string)</span> - Sort field: hotel_id, name, city, country, rating, starts (prefix with - for desc)
+                    </span>
+                </div>
+                
+                <div class="status-codes">
+                    <span class="status-code status-200">200</span>
+                    <span>Hotels retrieved successfully</span>
+                    <span class="status-code status-400">400</span>
+                    <span>Invalid parameters</span>
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/v1/hotels/{hotelID}</span>
+                <p>Get details for a specific hotel</p>
+                
+                <div class="params">
+                    <h4>Path Parameters:</h4>
+                    <span class="param">
+                        <span class="param-name">hotelID</span> 
+                        <span class="param-type">(integer)</span> - Unique hotel identifier
+                    </span>
+                </div>
+                
+                <div class="status-codes">
+                    <span class="status-code status-200">200</span>
+                    <span>Hotel found</span>
+                    <span class="status-code status-404">404</span>
+                    <span>Hotel not found</span>
+                </div>
+            </div>
+        </section>
+        
+        <section id="reviews" class="section">
+            <h2>Review Endpoints</h2>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/v1/hotels/{hotelID}/reviews</span>
+                <p>List reviews for a specific hotel</p>
+                
+                <div class="params">
+                    <h4>Path Parameters:</h4>
+                    <span class="param">
+                        <span class="param-name">hotelID</span> 
+                        <span class="param-type">(integer)</span> - Hotel identifier
+                    </span>
+                    <h4>Query Parameters:</h4>
+                    <span class="param">
+                        <span class="param-name">search</span> 
+                        <span class="param-type">(string)</span> - Search term for review content
+                    </span>
+                    <span class="param">
+                        <span class="param-name">page</span> 
+                        <span class="param-type">(integer)</span> - Page number
+                    </span>
+                    <span class="param">
+                        <span class="param-name">page_size</span> 
+                        <span class="param-type">(integer)</span> - Items per page
+                    </span>
+                    <span class="param">
+                        <span class="param-name">sort</span> 
+                        <span class="param-type">(string)</span> - Sort field: id, hotel_id, name, country, city, rating, starts (prefix with - for desc)
+                    </span>
+                </div>
+                
+                <div class="status-codes">
+                    <span class="status-code status-200">200</span>
+                    <span>Reviews retrieved</span>
+                    <span class="status-code status-404">404</span>
+                    <span>Hotel not found</span>
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/v1/hotels/{hotelID}/reviews/{reviewID}</span>
+                <p>Get a specific review</p>
+                
+                <div class="params">
+                    <h4>Path Parameters:</h4>
+                    <span class="param">
+                        <span class="param-name">hotelID</span> 
+                        <span class="param-type">(integer)</span> - Hotel identifier
+                    </span>
+                    <span class="param">
+                        <span class="param-name">reviewID</span> 
+                        <span class="param-type">(integer)</span> - Review identifier
+                    </span>
+                </div>
+            </div>
+            
+            <div class="endpoint">
+                <span class="method get">GET</span>
+                <span class="url">/v1/hotels/{hotelID}/reviews/{reviewID}/summary</span>
+                <p>Get AI-generated summary of a review</p>
+                
+                <div class="params">
+                    <h4>Path Parameters:</h4>
+                    <span class="param">
+                        <span class="param-name">hotelID</span> 
+                        <span class="param-type">(integer)</span> - Hotel identifier
+                    </span>
+                    <span class="param">
+                        <span class="param-name">reviewID</span> 
+                        <span class="param-type">(integer)</span> - Review identifier
+                    </span>
+                </div>
+            </div>
+        </section>
+        
+        <section id="examples" class="section">
+            <h2>Example Requests</h2>
+            
+            <h3>List Hotels with Search</h3>
+            <div class="example">
+                <pre>curl "http://localhost:4000/v1/hotels?search=grand&sort=-rating&page=1&page_size=10"</pre>
+            </div>
+            
+            <h3>Get Hotel Details</h3>
+            <div class="example">
+                <pre>curl "http://localhost:4000/v1/hotels/123"</pre>
+            </div>
+            
+            <h3>Get Hotel Reviews</h3>
+            <div class="example">
+                <pre>curl "http://localhost:4000/v1/hotels/123/reviews?page=1&page_size=5"</pre>
+            </div>
+            
+            <h3>Example Response Structure</h3>
+            <div class="example">
+                <h4>Hotels Success Response:</h4>
+                <pre>{
+  "hotels": [
+    {
+      "hotel_id": 123,
+      "main_image_th": "https://example.com/image.jpg",
+      "hotel_name": "Grand Hotel",
+      "phone": "+33-1-234-5678",
+      "email": "info@grandhotel.com",
+      "address": {
+        "address": "123 Rue de Rivoli",
+        "city": "Paris",
+        "state": "Île-de-France",
+        "country": "France",
+        "postal_code": "75001"
+      },
+      "stars": 5,
+      "rating": 4.5,
+      "review_count": 1250,
+      "child_allowed": true,
+      "pets_allowed": false,
+      "description": "Luxury hotel in the heart of Paris",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "metadata": {
+    "current_page": 1,
+    "page_size": 20,
+    "first_page": 1,
+    "last_page": 5,
+    "total_records": 100
+  }
+}</pre>
+
+                <h4>Reviews Success Response:</h4>
+                <pre>{
+  "reviews": [
+    {
+      "id": 456,
+      "hotel_id": 123,
+      "average_score": 8,
+      "country": "USA",
+      "type": "Business",
+      "name": "John Doe",
+      "date": "2024-01-15",
+      "headline": "Excellent stay!",
+      "language": "en",
+      "pros": "Great location, excellent service",
+      "cons": "A bit expensive",
+      "source": "booking.com",
+      "created_at": "2024-01-16T10:30:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "page_size": 20,
+    "first_page": 1,
+    "last_page": 3,
+    "total_records": 45
+  }
+}</pre>
+
+                <h4>Review Summary Response:</h4>
+                <pre>{
+  "summary": "The guest had a positive experience at this hotel, praising the excellent service and great location. However, they noted that the hotel is somewhat expensive compared to other options in the area."
+}</pre>
+            </div>
+            
+            <div class="example">
+                <h4>Error Response:</h4>
+                <pre>{
+  "error": "the requested resource could not be found"
+}</pre>
+
+                <h4>Validation Error Response:</h4>
+                <pre>{
+  "error": {
+    "page": "must be greater than zero",
+    "page_size": "must be a maximum of 100"
+  }
+}</pre>
+            </div>
+        </section>
+        
+        <footer style="text-align: center; padding: 2rem; color: #6c757d; border-top: 1px solid #e9ecef; margin-top: 2rem;">
+            <p>Nuitee API v1.0.0 - Built with Go and PostgreSQL</p>
+            <p>For more detailed interactive documentation, visit <a href="/docs">/docs</a></p>
+        </footer>
+    </div>
+</body>
+</html>

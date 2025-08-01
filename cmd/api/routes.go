@@ -16,6 +16,14 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
+	// Documentation routes
+	router.HandlerFunc(http.MethodGet, "/docs", app.serveDocsIndex)
+	router.HandlerFunc(http.MethodGet, "/docs/", app.serveDocsIndex)
+	router.HandlerFunc(http.MethodGet, "/docs/swagger", app.serveSwaggerUI)
+	router.HandlerFunc(http.MethodGet, "/docs/redoc", app.serveReDocUI)
+	router.HandlerFunc(http.MethodGet, "/docs/simple", app.serveSimpleHTML)
+	router.HandlerFunc(http.MethodGet, "/docs/openapi.yaml", app.serveOpenAPISpec)
+
 	router.HandlerFunc(http.MethodGet, "/v1/hotels", app.listHotelsHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/hotels/:hotelID", app.getHotelHandler)
 

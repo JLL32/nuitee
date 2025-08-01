@@ -1,0 +1,526 @@
+openapi: 3.0.3
+info:
+  title: Nuitee API
+  description: API for managing hotels and reviews
+  version: 1.0.0
+  contact:
+    name: Nuitee API Support
+servers:
+  - url: /v1
+    description: API version 1
+paths:
+  /healthcheck:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the API
+      operationId: healthcheck
+      tags:
+        - System
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: available
+                  system_info:
+                    type: object
+                    properties:
+                      environment:
+                        type: string
+                        example: development
+                      version:
+                        type: string
+                        example: 1.0.0
+                required:
+                  - status
+                  - system_info
+  /hotels:
+    get:
+      summary: List hotels
+      description: Retrieve a paginated list of hotels with optional search and filtering
+      operationId: listHotels
+      tags:
+        - Hotels
+      parameters:
+        - name: search
+          in: query
+          description: Search term for hotel names
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort
+          in: query
+          description: Sort field and direction
+          required: false
+          schema:
+            type: string
+            enum: [hotel_id, name, country, city, rating, starts, -hotel_id, -name, -country, -city, -rating, -starts]
+            default: hotel_id
+      responses:
+        '200':
+          description: List of hotels retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  metadata:
+                    $ref: '#/components/schemas/Metadata'
+                  hotels:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Hotel'
+                required:
+                  - metadata
+                  - hotels
+        '400':
+          description: Bad request - invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Unprocessable entity - validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /hotels/{hotelID}:
+    get:
+      summary: Get hotel by ID
+      description: Retrieve a specific hotel by its ID
+      operationId: getHotel
+      tags:
+        - Hotels
+      parameters:
+        - name: hotelID
+          in: path
+          description: Unique identifier for the hotel
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Hotel retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hotel:
+                    $ref: '#/components/schemas/Hotel'
+                required:
+                  - hotel
+        '404':
+          description: Hotel not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /hotels/{hotelID}/reviews:
+    get:
+      summary: List reviews for a hotel
+      description: Retrieve a paginated list of reviews for a specific hotel
+      operationId: listReviews
+      tags:
+        - Reviews
+      parameters:
+        - name: hotelID
+          in: path
+          description: Unique identifier for the hotel
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: search
+          in: query
+          description: Search term for review content
+          required: false
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: page_size
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: sort
+          in: query
+          description: Sort field and direction
+          required: false
+          schema:
+            type: string
+            enum: [id, hotel_id, name, country, city, rating, starts, -id, -hotel_id, -name, -country, -city, -rating, -starts]
+            default: id
+      responses:
+        '200':
+          description: List of reviews retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: '#/components/schemas/Metadata'
+                  reviews:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Review'
+                required:
+                  - meta
+                  - reviews
+        '404':
+          description: Hotel not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: Unprocessable entity - validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /hotels/{hotelID}/reviews/{reviewID}:
+    get:
+      summary: Get review by ID
+      description: Retrieve a specific review by its ID
+      operationId: getReview
+      tags:
+        - Reviews
+      parameters:
+        - name: hotelID
+          in: path
+          description: Unique identifier for the hotel
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: reviewID
+          in: path
+          description: Unique identifier for the review
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Review retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  review:
+                    $ref: '#/components/schemas/Review'
+                required:
+                  - review
+        '404':
+          description: Hotel or review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /hotels/{hotelID}/reviews/{reviewID}/summary:
+    get:
+      summary: Get AI-generated review summary
+      description: Retrieve an AI-generated summary of a specific review
+      operationId: getReviewSummary
+      tags:
+        - Reviews
+      parameters:
+        - name: hotelID
+          in: path
+          description: Unique identifier for the hotel
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: reviewID
+          in: path
+          description: Unique identifier for the review
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Review summary generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: string
+                    description: AI-generated summary text of the review
+                    example: "The guest had a positive experience at this hotel, praising the excellent service and clean rooms. However, they noted some issues with noise levels during their stay."
+                required:
+                  - summary
+        '404':
+          description: Hotel or review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Hotel:
+      type: object
+      properties:
+        hotel_id:
+          type: integer
+          description: Unique identifier for the hotel
+        main_image_th:
+          type: string
+          description: URL of the main hotel image thumbnail
+        hotel_name:
+          type: string
+          description: Name of the hotel
+        phone:
+          type: string
+          description: Hotel phone number
+        email:
+          type: string
+          format: email
+          description: Hotel email address
+        address:
+          $ref: '#/components/schemas/Address'
+        stars:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Star rating of the hotel
+        rating:
+          type: number
+          format: double
+          description: Average guest rating of the hotel
+        review_count:
+          type: integer
+          description: Total number of reviews for this hotel
+        child_allowed:
+          type: boolean
+          description: Whether children are allowed at the hotel
+        pets_allowed:
+          type: boolean
+          description: Whether pets are allowed at the hotel
+        description:
+          type: string
+          description: Hotel description
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the hotel was created
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the hotel was last updated
+      required:
+        - hotel_id
+        - hotel_name
+        - address
+        - stars
+        - rating
+        - review_count
+        - child_allowed
+        - pets_allowed
+        - created_at
+        - updated_at
+    Address:
+      type: object
+      properties:
+        address:
+          type: string
+          description: Street address
+        city:
+          type: string
+          description: City
+        state:
+          type: string
+          description: State or province
+        country:
+          type: string
+          description: Country
+        postal_code:
+          type: string
+          description: Postal or ZIP code
+      required:
+        - address
+        - city
+        - country
+    Review:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the review
+        hotel_id:
+          type: integer
+          description: ID of the hotel being reviewed
+        average_score:
+          type: integer
+          minimum: 1
+          maximum: 10
+          description: Average score given by the reviewer
+        country:
+          type: string
+          description: Country of the reviewer
+        type:
+          type: string
+          description: Type of the review
+        name:
+          type: string
+          description: Name of the reviewer
+        date:
+          type: string
+          description: Date of the review (as string from database timestamp)
+        headline:
+          type: string
+          description: Review headline
+        language:
+          type: string
+          description: Language of the review
+        pros:
+          type: string
+          description: Positive aspects mentioned in the review
+        cons:
+          type: string
+          description: Negative aspects mentioned in the review
+        source:
+          type: string
+          description: Source of the review
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the review was created
+      required:
+        - id
+        - hotel_id
+        - average_score
+        - country
+        - type
+        - name
+        - date
+        - headline
+        - language
+        - pros
+        - cons
+        - source
+        - created_at
+    Metadata:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          description: Current page number
+        page_size:
+          type: integer
+          description: Number of items per page
+        first_page:
+          type: integer
+          description: First page number
+        last_page:
+          type: integer
+          description: Last page number
+        total_records:
+          type: integer
+          description: Total number of records
+      required:
+        - current_page
+        - page_size
+        - first_page
+        - last_page
+        - total_records
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "the requested resource could not be found"
+      required:
+        - error
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: object
+          additionalProperties:
+            type: string
+          description: Field-specific validation errors
+          example:
+            page: "must be greater than zero"
+            page_size: "must be a maximum of 100"
+      required:
+        - error
+tags:
+  - name: System
+    description: System endpoints for health checks and monitoring
+  - name: Hotels
+    description: Hotel management endpoints
+  - name: Reviews
+    description: Hotel review endpoints
