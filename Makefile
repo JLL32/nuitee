@@ -1,4 +1,4 @@
-include .env
+include .envrc
 
 # ===============================================================================
 # HELPERS
@@ -26,7 +26,7 @@ run/api:
 ## run/sync: run the sync command
 .PHONY: run/sync
 run/sync:
-	go run ./cmd/sync -db-dsn=${NUITEE_DB_DSN} -api-key=${CUPID_API_KEY} -api-url=${CUPID_API_URL} -input='input.txt'
+	go run ./cmd/sync -db-dsn=${NUITEE_DB_DSN} -api-key=${CUPID_API_KEY} -api-url=${CUPID_API_URL} -input='input.txt' -interval=${SYNC_INTERVAL}
 
 # ===============================================================================
 # DATABASE

@@ -57,13 +57,14 @@ nuitee/
 
 ## Environment Variables
 
-Create a `.env` file in the root directory with the following variables:
+Create a .envrc file in the project root with your database configuration:
 
 ```env
-NUITEE_DB_DSN=postgres://username:password@localhost/nuitee?sslmode=disable
-OPEN_AI_KEY=your_openai_api_key
-CUPID_API_KEY=your_cupid_api_key
-CUPID_API_URL=https://api.cupid.example.com
+export NUITEE_DB_DSN='postgres://username:password@localhost/nuitee?sslmode=disable'
+export OPEN_AI_KEY='your_openai_api_key'
+export CUPID_API_KEY='your_cupid_api_key'
+export CUPID_API_URL='https://api.cupid.example.com'
+export SYNC_INTERVAL=3
 ```
 
 ## Installation
@@ -83,7 +84,7 @@ CUPID_API_URL=https://api.cupid.example.com
    ```bash
    # Create PostgreSQL database
    createdb nuitee
-   
+
    # Run migrations
    make db/migrations/up
    ```
