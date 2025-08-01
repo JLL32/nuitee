@@ -516,6 +516,109 @@ func TestNewReviewModel(t *testing.T) {
 	}
 }
 
+func TestReviewModel_Upsert(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	reviewModel := ReviewModel{DB: db}
+
+	review := &Review{
+		AverageScore: 5,
+		Country:      "US",
+		Type:         "Leisure",
+		Name:         "John Doe",
+		Date:         "2023-01-15",
+		Headline:     "Great hotel experience",
+		Language:     "en",
+		Pros:         "Clean rooms, friendly staff",
+		Cons:         "Noisy neighborhood",
+		Source:       "booking.com",
+	}
+
+	hotelID := 123
+	expectedID := 1
+	expectedCreatedAt := time.Now()
+
+	mock.ExpectQuery(`INSERT INTO reviews \(hotel_id, average_score, country, type, name, date, headline, language, pros, cons, source\) VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11\) ON CONFLICT \(hotel_id, name, date, headline\) DO UPDATE SET`).
+		WithArgs(
+			hotelID,
+			review.AverageScore,
+			review.Country,
+			review.Type,
+			review.Name,
+			review.Date,
+			review.Headline,
+			review.Language,
+			review.Pros,
+			review.Cons,
+			review.Source,
+		).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "hotel_id", "created_at"}).
+			AddRow(expectedID, hotelID, expectedCreatedAt))
+
+	err = reviewModel.Upsert(hotelID, review)
+
+	if err != nil {
+		t.Errorf("error was not expected while upserting review: %s", err)
+	}
+
+	if review.ID != expectedID {
+		t.Errorf("expected ID to be %v, got %v", expectedID, review.ID)
+	}
+
+	if review.HotelID != hotelID {
+		t.Errorf("expected HotelID to be %v, got %v", hotelID, review.HotelID)
+	}
+
+	if review.CreatedAt != expectedCreatedAt {
+		t.Errorf("expected CreatedAt to be %v, got %v", expectedCreatedAt, review.CreatedAt)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestReviewModel_Upsert_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	reviewModel := ReviewModel{DB: db}
+
+	review := &Review{
+		Name:     "John Doe",
+		Headline: "Great hotel",
+	}
+
+	hotelID := 123
+
+	mock.ExpectQuery(`INSERT INTO reviews \(hotel_id, average_score, country, type, name, date, headline, language, pros, cons, source\) VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11\) ON CONFLICT \(hotel_id, name, date, headline\) DO UPDATE SET`).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnError(sql.ErrConnDone)
+
+	err = reviewModel.Upsert(hotelID, review)
+
+	if err == nil {
+		t.Error("expected error, but got none")
+	}
+
+	if err != sql.ErrConnDone {
+		t.Errorf("expected error to be %v, got %v", sql.ErrConnDone, err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
 // Benchmark tests
 func BenchmarkReviewModel_Get(b *testing.B) {
 	db, mock, err := sqlmock.New()

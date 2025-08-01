@@ -439,6 +439,116 @@ func TestHotelModel_GetAll_DatabaseError(t *testing.T) {
 }
 
 // Benchmark tests
+func TestHotelModel_Upsert(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	hotelModel := HotelModel{DB: db}
+
+	hotel := &Hotel{
+		HotelID:     123,
+		MainImageTh: "image.jpg",
+		HotelName:   "Test Hotel",
+		Phone:       "123-456-7890",
+		Email:       "test@hotel.com",
+		Address: Address{
+			Address:    "123 Main St",
+			City:       "Test City",
+			State:      "Test State",
+			Country:    "Test Country",
+			PostalCode: "12345",
+		},
+		Stars:        5,
+		Rating:       4.5,
+		ReviewCount:  100,
+		ChildAllowed: true,
+		PetsAllowed:  false,
+		Description:  "A wonderful test hotel",
+	}
+
+	createdAt := time.Now()
+	updatedAt := time.Now()
+
+	mock.ExpectQuery(`INSERT INTO hotels \(\s*hotel_id, main_image_th, hotel_name, phone, email, address, city, state, country, postal_code, stars, rating, review_count, child_allowed, pets_allowed, description\s*\)\s*VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12, \$13, \$14, \$15, \$16\)\s*ON CONFLICT \(hotel_id\) DO UPDATE SET.*RETURNING created_at, updated_at`).
+		WithArgs(
+			hotel.HotelID,
+			hotel.MainImageTh,
+			hotel.HotelName,
+			hotel.Phone,
+			hotel.Email,
+			hotel.Address.Address,
+			hotel.Address.City,
+			hotel.Address.State,
+			hotel.Address.Country,
+			hotel.Address.PostalCode,
+			hotel.Stars,
+			hotel.Rating,
+			hotel.ReviewCount,
+			hotel.ChildAllowed,
+			hotel.PetsAllowed,
+			hotel.Description,
+		).
+		WillReturnRows(sqlmock.NewRows([]string{"created_at", "updated_at"}).
+			AddRow(createdAt, updatedAt))
+
+	err = hotelModel.Upsert(hotel)
+
+	if err != nil {
+		t.Errorf("error was not expected while upserting hotel: %s", err)
+	}
+
+	if hotel.CreatedAt != createdAt {
+		t.Errorf("expected CreatedAt to be %v, got %v", createdAt, hotel.CreatedAt)
+	}
+
+	if hotel.UpdatedAt != updatedAt {
+		t.Errorf("expected UpdatedAt to be %v, got %v", updatedAt, hotel.UpdatedAt)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestHotelModel_Upsert_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	hotelModel := HotelModel{DB: db}
+
+	hotel := &Hotel{
+		HotelID:   123,
+		HotelName: "Test Hotel",
+	}
+
+	mock.ExpectQuery(`INSERT INTO hotels \(\s*hotel_id, main_image_th, hotel_name, phone, email, address, city, state, country, postal_code, stars, rating, review_count, child_allowed, pets_allowed, description\s*\)\s*VALUES \(\$1, \$2, \$3, \$4, \$5, \$6, \$7, \$8, \$9, \$10, \$11, \$12, \$13, \$14, \$15, \$16\)\s*ON CONFLICT \(hotel_id\) DO UPDATE SET.*RETURNING created_at, updated_at`).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg()).
+		WillReturnError(sql.ErrConnDone)
+
+	err = hotelModel.Upsert(hotel)
+
+	if err == nil {
+		t.Error("expected error, but got none")
+	}
+
+	if err != sql.ErrConnDone {
+		t.Errorf("expected error to be %v, got %v", sql.ErrConnDone, err)
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
 func BenchmarkHotelModel_Get(b *testing.B) {
 	db, mock, err := sqlmock.New()
 	if err != nil {
