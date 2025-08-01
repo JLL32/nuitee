@@ -82,7 +82,7 @@ func (app *application) serveSwaggerUI(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	
+
 	err = t.Execute(w, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -119,7 +119,7 @@ func (app *application) serveReDocUI(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	
+
 	err = t.Execute(w, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -232,7 +232,7 @@ func (app *application) serveDocsIndex(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	
+
 	err = t.Execute(w, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)

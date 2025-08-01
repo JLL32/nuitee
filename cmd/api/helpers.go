@@ -182,7 +182,7 @@ func (app *application) OpenAIPrompt(prompt string) (*PromptResult, error) {
 	for range 3 {
 		resp, err = client.Do(req)
 		if err == nil {
-			break;
+			break
 		}
 	}
 

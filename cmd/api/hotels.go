@@ -34,8 +34,8 @@ func (app *application) getHotelHandler(w http.ResponseWriter, r *http.Request) 
 
 func (app *application) listHotelsHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Search string
-		Filters     data.Filters
+		Search  string
+		Filters data.Filters
 	}
 
 	v := validator.New()
