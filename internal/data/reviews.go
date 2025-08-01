@@ -59,6 +59,41 @@ func (r ReviewModel) Insert(hotelID int, review *Review) error {
 	return r.DB.QueryRowContext(ctx, query, args...).Scan(&review.ID, &review.HotelID, &review.CreatedAt)
 }
 
+func (r ReviewModel) Upsert(hotelID int, review *Review) error {
+	query := `
+		INSERT INTO reviews (hotel_id, average_score, country, type, name, date, headline, language, pros, cons, source)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		ON CONFLICT (hotel_id, name, date, headline) DO UPDATE SET
+			average_score = EXCLUDED.average_score,
+			country = EXCLUDED.country,
+			type = EXCLUDED.type,
+			language = EXCLUDED.language,
+			pros = EXCLUDED.pros,
+			cons = EXCLUDED.cons,
+			source = EXCLUDED.source
+		RETURNING id, hotel_id, created_at
+	`
+
+	args := []any{
+		hotelID,
+		review.AverageScore,
+		review.Country,
+		review.Type,
+		review.Name,
+		review.Date,
+		review.Headline,
+		review.Language,
+		review.Pros,
+		review.Cons,
+		review.Source,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return r.DB.QueryRowContext(ctx, query, args...).Scan(&review.ID, &review.HotelID, &review.CreatedAt)
+}
+
 func (r ReviewModel) Get(hotelID int64, id int64) (*Review, error) {
 	if id <= 0 {
 		return nil, ErrRecordNotFound

@@ -70,6 +70,56 @@ func (h HotelModel) Insert(hotel *Hotel) error {
 	return h.DB.QueryRowContext(ctx, query, args...).Scan(&hotel.CreatedAt, &hotel.UpdatedAt)
 }
 
+func (h HotelModel) Upsert(hotel *Hotel) error {
+	query :=
+		`INSERT INTO hotels (
+			hotel_id, main_image_th, hotel_name, phone, email, address, city, state, country, postal_code, stars, rating, review_count, child_allowed, pets_allowed, description
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		ON CONFLICT (hotel_id) DO UPDATE SET
+			main_image_th = EXCLUDED.main_image_th,
+			hotel_name = EXCLUDED.hotel_name,
+			phone = EXCLUDED.phone,
+			email = EXCLUDED.email,
+			address = EXCLUDED.address,
+			city = EXCLUDED.city,
+			state = EXCLUDED.state,
+			country = EXCLUDED.country,
+			postal_code = EXCLUDED.postal_code,
+			stars = EXCLUDED.stars,
+			rating = EXCLUDED.rating,
+			review_count = EXCLUDED.review_count,
+			child_allowed = EXCLUDED.child_allowed,
+			pets_allowed = EXCLUDED.pets_allowed,
+			description = EXCLUDED.description,
+			updated_at = CURRENT_TIMESTAMP
+		RETURNING created_at, updated_at`
+
+	args := []any{
+		hotel.HotelID,
+		hotel.MainImageTh,
+		hotel.HotelName,
+		hotel.Phone,
+		hotel.Email,
+		hotel.Address.Address,
+		hotel.Address.City,
+		hotel.Address.State,
+		hotel.Address.Country,
+		hotel.Address.PostalCode,
+		hotel.Stars,
+		hotel.Rating,
+		hotel.ReviewCount,
+		hotel.ChildAllowed,
+		hotel.PetsAllowed,
+		hotel.Description,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return h.DB.QueryRowContext(ctx, query, args...).Scan(&hotel.CreatedAt, &hotel.UpdatedAt)
+}
+
 func (h HotelModel) Get(id int64) (*Hotel, error) {
 	if id <= 0 {
 		return nil, ErrRecordNotFound
